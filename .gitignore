@@ -1,0 +1,12 @@
+__pycache__
+*.pyc
+.idea
+*.log
+*.css
+*.pytest_cache
+*.cache
+venv/*
+*egg-info*
+*.egg
+.DS_store
+*.txt
