@@ -1,15 +1,15 @@
-from time import sleep
+import os
 
 import telebot
 
 from src.bot_dataclasses import MyCar
-from src.main import get_info_about_car
+from src.main import get_info_about_car, check_car_in_queue, get_car_info
 
 # Mon.dec
 # t.me/borderBY_check_bot
 # @borderBY_check_bot
 
-bot_id = '5552158247:AAENEHaKVx2s-OILkc2zBw1AUriUA6xoTsw'
+bot_id = os.getenv('API_TOKEN')
 
 user_obj = MyCar()
 
@@ -21,7 +21,7 @@ def start(message):
     if message.text == '/start':
         bot.register_next_step_handler(message, get_car_regnum)
     elif message.text == '/tracking':
-        bot.register_next_step_handler(message, get_car_regnum, tracking=True)
+        bot.register_next_step_handler(message, check_info, tracking=True)
     # elif message.text == '/save my car':
     #     bot.register_next_step_handler(message, save_my_car)
     # elif message.text == '/get my car':
@@ -30,15 +30,28 @@ def start(message):
     #     print_help()
 
 
-def get_car_regnum(message, tracking=False):
-    car_regnum = message.text
+def check_info(message, tracking=False):
+    reg_num = get_car_regnum(message)
     if tracking:
-        bot.send_message(message.from_user.id, f'Tracking enabled')
-        while True:
-            info = get_info_about_car(bot, message.from_user.id, car_regnum)
-            if info == '1':
-                break
-            sleep(30)
+        tracking_car(message, reg_num)
+
+
+def get_car_regnum(message):
+    car_regnum = message.text
+    return car_regnum
+
+
+def tracking_car(message, reg_num):
+
+    bot.send_message(message.from_user.id, f'Tracking enabled')
+
+    cars_info = get_info_about_car()
+
+    if check_car_in_queue(cars_info, reg_num):
+        get_car_info(bot, message.from_user.id, reg_num)
+    else:
+        bot.send_message(message.from_user.id, f'Your car {reg_num} is not in queue')
+        bot.send_message(message.from_user.id, f'Tracking disable. Car not found')
 
 
 # if first_tracking:

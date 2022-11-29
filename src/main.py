@@ -1,3 +1,5 @@
+from time import sleep
+
 import requests
 
 from src.constants import QueueStatus
@@ -30,25 +32,37 @@ def get_carLiveQueue(info):
     return info.json()['carLiveQueue']
 
 
-def get_car_info(bot, id, queue, regnum):
+def check_car_in_queue(queue, regnum) -> bool:
     if regnum in list(map(lambda x: x.get('regnum'), queue)):
-        for i in queue:
-            if regnum in i['regnum']:
-                exit_code = '0'
-                if i['status'] == QueueStatus.SUMMONED_IN_PP.value:
-                    bot.send_message(id, f'GAZU KURWA')
-                    for _ in range(60):
-                        bot.send_message(id, f'GAZU')
-                    bot.send_message(id, f'GAZUUUUU KURWA')
-                return exit_code
+        return True
     else:
-        exit_code = '1'
-        bot.send_message(id, f'Your car {regnum} is not in queue')
-        return exit_code
+        return False
 
 
-def get_info_about_car(bot, id, car_regnum):
+def get_info_about_car():
     queue_info = get_info()
     car_live_queue_info = get_carLiveQueue(queue_info)
 
-    return get_car_info(bot, id, car_live_queue_info, car_regnum)
+    return car_live_queue_info
+
+
+def get_car_info(bot, message_id, regnum):
+    prev_order_id = None
+    while True:
+        queue = get_info_about_car()
+        for i in queue:
+            if regnum in i['regnum']:
+                if prev_order_id is None:
+                    prev_order_id = i['order_id']
+                elif prev_order_id != i['order_id']:
+                    bot.send_message(message_id, f'Your position has been changed. New position {i["order_id"]}')
+
+                if i['status'] == QueueStatus.SUMMONED_IN_PP.value:
+                    bot.send_message(message_id, f'GAZU KURWA')
+                    for _ in range(60):
+                        bot.send_message(message_id, f'GAZU')
+                        sleep(1)
+                    bot.send_message(message_id, f'GAZUUUUU KURWA')
+                    break
+                break
+        sleep(30)

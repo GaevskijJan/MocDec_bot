@@ -1,4 +1,6 @@
 FROM python:3.10.8
+ARG API_TOKEN_ARG
+ENV API_TOKEN=$API_TOKEN_ARG
 RUN mkdir /mocDeclarant
 WORKDIR /mocDeclarant
 ENV PYTHONPATH="/mocDeclarant"
