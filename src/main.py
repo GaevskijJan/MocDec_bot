@@ -1,8 +1,11 @@
-from time import sleep
+from typing import List
 
 import requests
 
+from time import sleep
 from src.constants import QueueStatus
+
+base_url = 'https://belarusborder.by/info/monitoring?checkpointId=7e46a2d1-ab2f-11ec-bafb-ac1f6bf889c1&token=bts47d5f-6420-4f74-8f78-42e8e4370cc4'
 
 
 def get_info():
@@ -21,48 +24,52 @@ def get_info():
                 "User-Agent" : "Mozilla/5.0 (X11; Linux x86_64; rv:105.0) Gecko/20100101 Firefox/105.0"
     }
 
-    url = 'https://belarusborder.by/info/monitoring?checkpointId=7e46a2d1-ab2f-11ec-bafb-ac1f6bf889c1&token=bts47d5f-6420-4f74-8f78-42e8e4370cc4'
+    url = base_url
 
-    r = requests.get(url=url, headers=headers)
-
-    return r
-
-
-def get_carLiveQueue(info):
-    return info.json()['carLiveQueue']
+    response = requests.get(url=url, headers=headers)
+    return response
 
 
-def check_car_in_queue(queue, regnum) -> bool:
-    if regnum in list(map(lambda x: x.get('regnum'), queue)):
+def get_carLiveQueue() -> List:
+    return get_info().json()['carLiveQueue']
+
+
+def check_car_in_queue(regnum) -> bool:
+    carLiveQueue = get_carLiveQueue()
+    if regnum in list(map(lambda x: x.get('regnum'), carLiveQueue)):
         return True
     else:
         return False
 
 
-def get_info_about_car():
-    queue_info = get_info()
-    car_live_queue_info = get_carLiveQueue(queue_info)
-
-    return car_live_queue_info
-
-
-def get_car_info(bot, message_id, regnum):
-    prev_order_id = None
+def get_car_info(car_regnum) -> str:
+    prev_order_id = -1
     while True:
-        queue = get_info_about_car()
-        for i in queue:
-            if regnum in i['regnum']:
-                if prev_order_id is None:
-                    prev_order_id = i['order_id']
-                elif prev_order_id != i['order_id']:
-                    bot.send_message(message_id, f'Your position has been changed. New position {i["order_id"]}')
+        carLiveQueue = get_carLiveQueue()
 
-                if i['status'] == QueueStatus.SUMMONED_IN_PP.value:
-                    bot.send_message(message_id, f'GAZU KURWA')
-                    for _ in range(60):
-                        bot.send_message(message_id, f'GAZU')
-                        sleep(1)
-                    bot.send_message(message_id, f'GAZUUUUU KURWA')
-                    break
-                break
+        for car in carLiveQueue:
+            if car_regnum in car['regnum']:
+                if prev_order_id == -1:
+                    prev_order_id = int(car['order_id'])
+                    message = f"Your started position {car['order_id']}"
+                    return message
+                elif prev_order_id != int(car['order_id']):
+                    message = f'Your position has been changed. New position {car["order_id"]}'
+                    if car['status'] == QueueStatus.SUMMONED_IN_PP.value:
+                        message = f'GAZU KURWA'
+                        return message
+                    return message
+                else:
+                    message = f'Car {car_regnum} not found in queue'
+                    return message
         sleep(30)
+
+
+def tracking_car(car_regnum: str) -> str:
+    if check_car_in_queue(car_regnum):
+        message = get_car_info(car_regnum)
+        return message
+    else:
+        message = f'Your car {car_regnum} is not in queue\n Tracking disable. Car not found'
+        return message
+
