@@ -1,3 +1,4 @@
+from pyexpat.errors import messages
 from typing import List
 
 import requests
@@ -5,7 +6,7 @@ import requests
 from time import sleep
 from src.constants import QueueStatus
 
-base_url = 'https://belarusborder.by/info/monitoring?checkpointId=7e46a2d1-ab2f-11ec-bafb-ac1f6bf889c1&token=bts47d5f-6420-4f74-8f78-42e8e4370cc4'
+base_url = '	https://belarusborder.by/info/monitoring-new?token=test&checkpointId=a9173a85-3fc0-424c-84f0-defa632481e4'
 
 
 def get_info():
@@ -65,6 +66,26 @@ def get_car_info(car_regnum) -> str:
         sleep(30)
 
 
+def AnQue():
+    AnnuledCount = 0
+    SummonedCount = 0
+
+    AnnuledCarsNumber = []
+    SummonedCarsNumber = []
+
+    Queue = get_carLiveQueue()
+    QueueLen = len(Queue)
+
+    for car in Queue:
+        if car['status'] == QueueStatus.ANNULLED.value:
+            AnnuledCount += 1
+            AnnuledCarsNumber.append(car['regnum'])
+        if car['status'] == QueueStatus.SUMMONED_IN_PP.value:
+            SummonedCount += 1
+            SummonedCarsNumber.append(car['regnum'])
+    return QueueLen, AnnuledCount, AnnuledCarsNumber, SummonedCount, SummonedCarsNumber
+
+
 def tracking_car(car_regnum: str) -> str:
     if check_car_in_queue(car_regnum):
         message = get_car_info(car_regnum)
@@ -72,4 +93,14 @@ def tracking_car(car_regnum: str) -> str:
     else:
         message = f'Your car {car_regnum} is not in queue\n Tracking disable. Car not found'
         return message
+
+
+def get_queue_info() -> str:
+    QueueLen, AnnuledCount, AnnuledCarsNumber, SummonedCount, SummonedCarsNumber = AnQue()
+
+
+    messages = (f"Queue Lenght = {QueueLen} \nAnnuled Count = {AnnuledCount} \nAnnuledCarsNumber = {AnnuledCarsNumber} "
+                f"\nSummoned Count = {SummonedCount} \nSummonedCarsNumber = {SummonedCarsNumber}")
+
+    return messages
 
